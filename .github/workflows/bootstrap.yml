@@ -1,0 +1,47 @@
+name: Bootstrap Flutter skeleton
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Create skeleton in a temp dir
+        run: |
+          flutter create --org com.cono --project-name cono_os \
+            --platforms=android,ios,windows,macos,linux /tmp/skeleton
+      - name: Copy platform folders only (never overwrite lib/)
+        run: |
+          for d in android ios windows macos linux; do
+            if [ ! -d "$d" ]; then
+              cp -R "/tmp/skeleton/$d" "./$d"
+              echo "added $d"
+            else
+              echo "$d already exists - left untouched"
+            fi
+          done
+          for f in .gitignore .metadata analysis_options.yaml; do
+            if [ ! -f "$f" ]; then cp "/tmp/skeleton/$f" "./$f"; fi
+          done
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "Add Flutter platform skeleton via CI bootstrap"
+            git push
+          fi
