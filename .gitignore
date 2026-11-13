@@ -32,6 +32,9 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/.venv/
+/training/data/
+/training/checkpoints/
 
 # Symbolication related
 app.*.symbols
