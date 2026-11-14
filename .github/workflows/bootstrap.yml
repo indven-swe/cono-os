@@ -20,10 +20,10 @@ jobs:
       - name: Create skeleton in a temp dir
         run: |
           flutter create --org com.cono --project-name cono_os \
-            --platforms=android,ios,windows,macos,linux /tmp/skeleton
+            --platforms=ios,windows,macos,linux /tmp/skeleton
       - name: Copy platform folders only (never overwrite lib/)
         run: |
-          for d in android ios windows macos linux; do
+          for d in ios windows macos linux; do
             if [ ! -d "$d" ]; then
               cp -R "/tmp/skeleton/$d" "./$d"
               echo "added $d"

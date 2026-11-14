@@ -2,6 +2,9 @@
 cmake_minimum_required(VERSION 3.14)
 project(cono_os LANGUAGES CXX)
 
+# The Windows WebView plugin still uses Microsoft's deprecated coroutine header.
+add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "cono_os")
