@@ -17,5 +17,5 @@ enum ConoModelTier {
   final int dailyRequestLimit;
   final String trainingPreset;
 
-  bool get requiresSeparateInstall => this == large;
+  String get bundledAssetPath => 'assets/models/cono-nova-$trainingPreset.onnx';
 }

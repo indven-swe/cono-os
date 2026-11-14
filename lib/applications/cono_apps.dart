@@ -1164,7 +1164,6 @@ class _ConoAiAppState extends State<ConoAiApp> {
   late int _remaining = widget.quota.remaining;
   bool _modelAvailable = false;
   bool _isGenerating = false;
-  bool _isImporting = false;
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
       text: 'Hi, I’m Cono. My chat will use only ${ConoModelTier.modelName}, '
@@ -1224,39 +1223,9 @@ class _ConoAiAppState extends State<ConoAiApp> {
     }
   }
 
-  Future<void> _importModel() async {
-    if (_isGenerating || _isImporting) {
-      return;
-    }
-    setState(() => _isImporting = true);
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const ['onnx'],
-      );
-      final path = result?.files.single.path;
-      if (path == null) {
-        return;
-      }
-      await _runtime.installModel(path, _selectedTier);
-      await _refreshModelAvailability();
-    } on Object catch (error, stackTrace) {
-      debugPrint('Could not import Cono Nova model: $error\n$stackTrace');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not import this model: $error')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isImporting = false);
-      }
-    }
-  }
-
   Future<void> _send(String value) async {
     final text = value.trim();
-    if (text.isEmpty || _isGenerating || _isImporting) {
+    if (text.isEmpty || _isGenerating) {
       return;
     }
     final website = LadybirdAddress.command(text);
@@ -1279,7 +1248,7 @@ class _ConoAiAppState extends State<ConoAiApp> {
     if (!_modelAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Import this Cono Nova model before starting a chat.'),
+          content: Text('Cono Nova is unavailable in this app build.'),
         ),
       );
       return;
@@ -1384,15 +1353,13 @@ class _ConoAiAppState extends State<ConoAiApp> {
                 DropdownButtonHideUnderline(
                   child: DropdownButton<ConoModelTier>(
                     value: _selectedTier,
-                    onChanged:
-                        _isGenerating || _isImporting ? null : _selectTier,
+                    onChanged: _isGenerating ? null : _selectTier,
                     items: [
                       for (final tier in ConoModelTier.values)
                         DropdownMenuItem(
                           value: tier,
                           child: Text(
-                            '${tier.label} · ${tier.parameterLabel}'
-                            '${tier.requiresSeparateInstall ? ' · Install' : ''}',
+                            '${tier.label} · ${tier.parameterLabel}',
                           ),
                         ),
                     ],
@@ -1408,20 +1375,6 @@ class _ConoAiAppState extends State<ConoAiApp> {
               ),
             ),
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _isGenerating || _isImporting ? null : _importModel,
-                icon: const Icon(Icons.file_open_outlined, size: 16),
-                label: Text(
-                  _isImporting
-                      ? 'Importing...'
-                      : _modelAvailable
-                          ? 'Replace model'
-                          : 'Import model',
-                ),
-              ),
-            ),
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -1468,10 +1421,8 @@ class _ConoAiAppState extends State<ConoAiApp> {
                 const SizedBox(width: 10),
                 IconButton.filled(
                   tooltip: 'Send message',
-                  onPressed: _isGenerating || _isImporting
-                      ? null
-                      : () => _send(_input.text),
-                  icon: _isGenerating || _isImporting
+                  onPressed: _isGenerating ? null : () => _send(_input.text),
+                  icon: _isGenerating
                       ? const SizedBox.square(
                           dimension: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
@@ -1483,7 +1434,7 @@ class _ConoAiAppState extends State<ConoAiApp> {
             const SizedBox(height: 10),
             Text(
               '${ConoModelTier.modelName} ${_selectedTier.label}: '
-              '${_modelAvailable ? 'installed on this device' : 'model not installed'}. '
+              '${_modelAvailable ? 'included with this app' : 'model unavailable'}. '
               'No other AI is used. '
               'Requests today: ${_selectedTier.dailyRequestLimit - _remaining}/${_selectedTier.dailyRequestLimit}.',
               style: TextStyle(color: Colors.white54, fontSize: 11),

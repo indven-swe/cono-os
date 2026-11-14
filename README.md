@@ -38,16 +38,16 @@ awareness, and host-computer control are not implemented.
 
 The model is named **Cono Nova**. Its three randomly initialized Transformer
 presets (25M, 38M, and 85M parameters) were each trained for one bounded CPU
-epoch and exported as local INT8 ONNX packages. The checkpoint files and OASST1
-corpus are ignored by Git and remain on the training machine; import the matching
-`.onnx` file in Cono AI to use it. These are experimental starter models, not
-capable general-purpose assistants: each run used only 128 training and 128
-validation windows from a small corpus. Normal chat uses only the selected local
-Cono Nova model, with no hosted-provider or fallback model. The selected tier's
-daily limit applies to actual model requests.
-The model selector uses one shared daily counter, so switching tiers cannot
-reset requests already used that day. Large can be imported as a separate
-package, but no download service or signed model release is configured yet.
+epoch and exported as local INT8 ONNX packages. All three ONNX model files are
+packaged inside the app and automatically loaded for the selected tier; users
+do not need to find or import a model file. The larger `.pt` training checkpoints
+and OASST1 corpus remain ignored by Git. These are experimental starter models,
+not capable general-purpose assistants: each run used only 128 training and
+128 validation windows from a small corpus. Normal chat uses only the selected
+local Cono Nova model, with no hosted-provider or fallback model. The selected
+tier's daily limit applies to actual model requests. The model selector uses one
+shared daily counter, so switching tiers cannot reset requests already used that
+day.
 
 The request limit is stored locally, so it applies per app installation and can
 be reset by clearing app data or reinstalling. Enforcing a limit across
@@ -71,16 +71,21 @@ The Windows build is distributed as a portable ZIP, not an installer. Download
 the `windows-x64` ZIP from [GitHub Releases](https://github.com/indven-swe/cono-os/releases),
 extract the entire folder, then double-click `cono_os.exe` inside it. Keep the
 other files beside the executable; deleting the extracted folder removes the
-app. Cono AI also requires importing the matching Cono Nova `.onnx` model from
-`training/checkpoints/`; model files are not included in the app ZIP.
+app. Cono AI automatically loads the selected Cono Nova `.onnx` model from
+inside the app package; no separate model download or import is needed. The
+model assets add about 150 MB before compression.
 
 Training still needs an approved corpus with enough representative text and
-suitable compute. The training command creates a deterministic held-out split. More suitable
-training data, longer training, and device evaluation are still needed. Model
-size alone does not establish that it will be useful or fit every target device.
+suitable compute. The training command creates a deterministic held-out split.
+More suitable training data, longer training, and device evaluation are still
+needed. Model size alone does not establish that it will be useful or fit every
+target device.
 
 Python is used for model training; Flutter/Dart remains the ConoOS app stack.
-The corpus and generated checkpoints are intentionally ignored by Git.
+The corpus and generated `.pt` checkpoints are intentionally ignored by Git;
+the trained ONNX files in `assets/models/` are included with the app. When
+retraining, copy each exported `.onnx` file into `assets/models/` before
+building a release.
 
 ## Build and test
 
@@ -108,7 +113,8 @@ builds. Release CI also builds the available mobile and desktop targets.
 Training requires a local, approved text corpus. Use JSONL with one
 `{"text":"..."}` record per line, or a UTF-8 text file with documents separated
 by blank lines. Keep private or unlicensed data out of the repository:
-`training/data/` and `training/checkpoints/` are ignored by Git.
+`training/data/` and `training/checkpoints/` are ignored by Git. The deployable
+ONNX models live in `assets/models/` and ship with the application.
 
 ```powershell
 python -m venv .venv
@@ -122,6 +128,7 @@ python -m training.train --dataset training/data/cono-nova-oasst1-en.jsonl --mod
 python -m training.export_onnx --checkpoint training/checkpoints/cono-nova-phone-25m.pt --output training/checkpoints/cono-nova-phone-25m.onnx
 python -m training.export_onnx --checkpoint training/checkpoints/cono-nova-balanced-38m.pt --output training/checkpoints/cono-nova-balanced-38m.onnx
 python -m training.export_onnx --checkpoint training/checkpoints/cono-nova-large-85m.pt --output training/checkpoints/cono-nova-large-85m.onnx
+Copy-Item training/checkpoints/cono-nova-phone-25m.onnx,training/checkpoints/cono-nova-balanced-38m.onnx,training/checkpoints/cono-nova-large-85m.onnx assets/models/
 ```
 
 `prepare_oasst` downloads the [OASST1 conversation dataset](https://huggingface.co/datasets/OpenAssistant/oasst1)
@@ -156,6 +163,6 @@ checkpoint under `training/checkpoints/`. CPU training may be very slow; GPU
 availability is detected automatically when using CUDA. The trainer itself
 does not download data or use pretrained weights; the separate preparation
 command downloads OASST1 from Hugging Face. The exporter produces a
-weight-quantized ONNX file with model and preset metadata. In Cono AI, use
-**Import model** to select the matching `.onnx` file for the chosen tier; it is
-stored in the app's local support directory and inference runs on-device.
+weight-quantized ONNX file with model and preset metadata. Copy the exported
+packages into `assets/models/` before building so they are bundled and loaded
+automatically; inference runs on-device.

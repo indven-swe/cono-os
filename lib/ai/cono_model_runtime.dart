@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -31,12 +32,19 @@ class LocalConoModelRuntime implements ConoModelRuntime {
 
   final OnnxRuntime _runtime;
   final math.Random _random = math.Random();
+  late final Future<Set<String>> _bundledAssets =
+      AssetManifest.loadFromAssetBundle(rootBundle)
+          .then((manifest) => manifest.listAssets().toSet());
   OrtSession? _activeSession;
   ConoModelTier? _activeTier;
 
   @override
-  Future<bool> hasModel(ConoModelTier tier) async =>
-      (await _modelFile(tier)).exists();
+  Future<bool> hasModel(ConoModelTier tier) async {
+    if (await (await _modelFile(tier)).exists()) {
+      return true;
+    }
+    return (await _bundledAssets).contains(tier.bundledAssetPath);
+  }
 
   @override
   Future<void> installModel(String sourcePath, ConoModelTier tier) async {
@@ -52,7 +60,7 @@ class LocalConoModelRuntime implements ConoModelRuntime {
 
     try {
       await source.copy(temporary.path);
-      final candidate = await _createSession(temporary, tier);
+      final candidate = await _createSession(tier, modelFile: temporary);
       await candidate.close();
       if (_activeTier == tier) {
         await close();
@@ -144,30 +152,34 @@ class LocalConoModelRuntime implements ConoModelRuntime {
     _activeSession = null;
     _activeTier = null;
 
-    final session = await _createSession(await _modelFile(tier), tier);
+    final session = await _createSession(
+      tier,
+      modelFile: await _modelFile(tier),
+    );
     _activeSession = session;
     _activeTier = tier;
     return session;
   }
 
   Future<OrtSession> _createSession(
-    File modelFile,
-    ConoModelTier tier,
-  ) async {
-    if (!await modelFile.exists()) {
-      throw FileSystemException(
-        'Cono Nova model is not installed.',
-        modelFile.path,
-      );
-    }
-    final session = await _runtime.createSession(
-      modelFile.path,
-      options: OrtSessionOptions(
-        intraOpNumThreads: 2,
-        interOpNumThreads: 1,
-        providers: [OrtProvider.CPU],
-      ),
+    ConoModelTier tier, {
+    File? modelFile,
+  }) async {
+    final installedModel = modelFile;
+    final options = OrtSessionOptions(
+      intraOpNumThreads: 2,
+      interOpNumThreads: 1,
+      providers: [OrtProvider.CPU],
     );
+    final session = installedModel != null && await installedModel.exists()
+        ? await _runtime.createSession(
+            installedModel.path,
+            options: options,
+          )
+        : await _runtime.createSessionFromAsset(
+            tier.bundledAssetPath,
+            options: options,
+          );
     try {
       if (!session.inputNames.contains('token_ids') ||
           !session.outputNames.contains('logits')) {

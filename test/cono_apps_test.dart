@@ -66,7 +66,7 @@ void main() {
 
     expect(find.textContaining('model not installed'), findsOneWidget);
     expect(
-      find.text('Import this Cono Nova model before starting a chat.'),
+      find.text('Cono Nova is unavailable in this app build.'),
       findsOneWidget,
     );
     expect(quota.remaining, initialQuota);
@@ -105,7 +105,7 @@ void main() {
 
     await tester.tap(find.byType(DropdownButton<ConoModelTier>));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Large · 85.5M · Install').last);
+    await tester.tap(find.text('Large · 85.5M').last);
     await tester.pumpAndSettle();
 
     expect(quota.selectedTier, ConoModelTier.large);
