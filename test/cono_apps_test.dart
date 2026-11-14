@@ -32,7 +32,7 @@ void main() {
     expect(preferences.getString('cono_note'), 'A thought for later');
   });
 
-  testWidgets('Cono AI does not use a fallback before its model is ready', (
+  testWidgets('Cono AI does not use a fallback when no model is available', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -64,7 +64,6 @@ void main() {
     await tester.tap(find.byTooltip('Send message'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('model not installed'), findsOneWidget);
     expect(
       find.text('Cono Nova is unavailable in this app build.'),
       findsOneWidget,

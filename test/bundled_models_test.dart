@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('every Cono Nova tier is packaged as an app asset', () async {
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final bundledAssets = manifest.listAssets().toSet();
