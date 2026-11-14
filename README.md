@@ -6,7 +6,8 @@ modify the host operating system.
 
 ## What works in this prototype
 
-- An adaptive dark workspace for mobile and desktop-sized screens.
+- An adaptive dark workspace for iOS and desktop-sized screens; Android is not
+  a supported target.
 - App launcher and local search for built-in apps, with a persistent app registry
   defined in the shell.
 - Notes saved on-device using app preferences.
@@ -19,7 +20,7 @@ modify the host operating system.
 - A touch drawing canvas with PNG export through the host save dialog.
 - Host Bridge shortcuts that users explicitly register and launch.
 - Ladybird, an in-app browser with address/search input, history, reload, and
-  embedded pages on Android, iOS, macOS, and Windows. Linux opens pages in the
+  embedded pages on iOS, macOS, and Windows. Linux opens pages in the
   host browser because the embedded WebView plugin does not support Linux.
 - Cono AI chat UI, available from the app launcher and the desktop right-click
   menu. Explicit `open example.com` and `search for ...` commands open Ladybird
@@ -58,7 +59,7 @@ Bridge intentionally does not enumerate installed apps: platform permissions
 and policies differ, and iOS does not permit general app enumeration. Users
 register shortcuts themselves; a shortcut only works if the host platform and
 target app support its URL scheme. Ladybird uses the host platform's WebView
-(Android WebView, WKWebView, or WebView2), not the separate Ladybird browser
+(WKWebView or WebView2), not the separate Ladybird browser
 engine. It supports HTTP(S) pages; Linux uses the host browser for HTTPS links.
 Plain HTTP pages are not encrypted; use HTTPS where available. Web indexing and
 broad host-app discovery are not implemented yet. Search terms are sent to
@@ -97,7 +98,6 @@ dart run tool/make_icon.dart
 dart run flutter_launcher_icons
 flutter analyze --no-fatal-infos
 flutter test
-flutter build apk --debug
 flutter build windows --debug
 flutter build linux --debug
 ```
@@ -105,8 +105,9 @@ flutter build linux --debug
 Platform builds require their corresponding Flutter and native platform
 toolchains. The project owner does not need to install these tools locally;
 CI or a remote development environment can be used instead. Pull-request CI
-runs Flutter analysis/tests, Python model tests, and Android/Windows/Linux debug
-builds. Release CI also builds the available mobile and desktop targets.
+runs Flutter analysis/tests, Python model tests, and Windows/Linux debug builds.
+Release CI builds Windows, macOS, Linux, and an unsigned iOS package. Android is
+intentionally excluded from CI and releases.
 
 ## Cono AI training
 

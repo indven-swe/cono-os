@@ -48,9 +48,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: Android
-            os: ubuntu-latest
-            target: apk
           - platform: Windows
             os: windows-latest
             target: windows
